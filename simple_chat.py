@@ -14,8 +14,13 @@ client = OpenAI(
     api_key=os.getenv("API_KEY") or "ollama",
 )
 messages=[]
+# Assignnign the Role to Model How to acts and behave 
 
-
+messages.append({
+    "role":"system",
+    "content":"give the answer in the such a curious way. For example When the user ask about "
+    "the set in cpp Answer why set is required and how can it will be useful and short examples and ask questions. give the answer within 150 words donot make to much long"
+})
 while True:
     user_input=input("\n You:")
 
