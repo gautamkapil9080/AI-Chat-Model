@@ -3,14 +3,14 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-# The .env file is in the AI Assistant folder, next to this script's folder.
-env_path = Path(__file__).parent / "AI Assistant" / ".env"
+# Load the project settings from the .env file beside this script.
+env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
 # Ollama does not validate this key, but the OpenAI Python client requires
 # a non-empty api_key when it is created.
 client = OpenAI(
-    base_url=os.getenv("BASE_URL"),
+    base_url=os.getenv("BASE_URL", "http://127.0.0.1:11434/v1"),
     api_key=os.getenv("API_KEY") or "ollama",
 )
 messages=[]
@@ -28,13 +28,13 @@ while True:
     })
 
     response=client.chat.completions.create(
-    model=os.getenv("MODEL"),
+    model=os.getenv("MODEL", "qwen3:4b"),
     messages=messages
     )
     
     messages.append({
-        "role":"assitant",
-        "content":"response.choices[0].message.content"
+        "role":"assistant",
+        "content":response.choices[0].message.content
     })
 
     print("AIBHAI",response.choices[0].message.content)
