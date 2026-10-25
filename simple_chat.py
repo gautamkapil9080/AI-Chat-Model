@@ -19,6 +19,7 @@ client = OpenAI(
 
 messages=[]
 # Assignnign the Role to Model How to acts and behave 
+maxStep=5
 
 messages.append({
     "role":"system",
@@ -27,7 +28,7 @@ messages.append({
 })
 
 
-# looping Start for the tool: 
+# Chat Loops Start from Here  
 while True:
     user_input=input("\n You:")
 
@@ -39,44 +40,49 @@ while True:
         "content":user_input,
     })
 
+# Chain Looping Start from Here 
 
-    response=client.chat.completions.create(
-    model=os.getenv("MODEL", "qwen3:4b"),
-    messages=messages,
-    tools=Tools,
-    )
+    # while True: - To prevent from infinite tool calling we are moving to for loop
+    for loop in range(maxStep):
+        # Tools Calling Garna 
+            response=client.chat.completions.create(
+            model=os.getenv("MODEL", "qwen3:4b"),
+            messages=messages,
+            tools=Tools
+            )
 
-    msg=response.choices[0].message
-    if msg.tool_calls:
-        messages.append(msg)
+            msg=response.choices[0].message # message append form the tools calls 
 
-        for tool_call in msg.tool_calls:
-            func_name=tool_call.function.name
-            func_arg=json.loads(tool_call.function.arguments or "{}")  # convert the json into dictionary 
+            if not msg.tool_calls:      # If not find any tools just break from the loop
+                 break  
 
-            fn=FUNCTION_NAME_TO_FUNCTION_MAP[func_name]
-            result=fn(**func_arg)
+            messages.append(msg)        # Just append the msg in the messages until we get
 
-        messages.append({
+            for tool_call in msg.tool_calls:
+                func_name=tool_call.function.name
+                func_args= {}
+
+                try:
+                     func_arg=json.loads(tool_call.function.arguments or "{}")  # convert the json into dictionary 
+                     fn=FUNCTION_NAME_TO_FUNCTION_MAP[func_name]
+                     result=fn(**func_arg)
+
+                
+                except Exception as e:
+                    result=f"Error while running the function {e}"
+
+
+
+            messages.append({
             "role":"tool",
             "tool_id":"tool_call.id",
             "content":str(result)
-
-        })
-
-        # second call to llm api 
-        response=client.chat.completions.create(
-            model=os.getenv("MODEL"),
-            messages=messages
-        )
-
-        msg=response.choices[0].message
-
+            })
+        
     messages.append({
-        "role":"assistant",
-        "content":"msg.content"
+         "role":"assistant",
+         "content":"msg.content"
     })
-
     print("Assistant  "+ msg.content)
 
 
