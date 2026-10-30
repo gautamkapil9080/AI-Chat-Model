@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 from tools import Tools, FUNCTION_NAME_TO_FUNCTION_MAP
+from utils.utility import debugTool
+from tools import runTool
 import json 
+
 
 # Load the project settings from the .env file beside this script.
 env_path = Path(__file__).parent / ".env"
@@ -56,23 +59,18 @@ while True:
             if not msg.tool_calls:      # If not find any tools just break from the loop
                  break  
 
+            debugTool(f"Step {maxStep+1} : model requrest len{msg.tool_calls}")
+            
+
             messages.append(msg)        # Just append the msg in the messages until we get
 
-            for tool_call in msg.tool_calls:
-                func_name=tool_call.function.name
-                func_args= {}
-
-                try:
-                     func_arg=json.loads(tool_call.function.arguments or "{}")  # convert the json into dictionary 
-                     fn=FUNCTION_NAME_TO_FUNCTION_MAP[func_name]
-                     result=fn(**func_arg)
-
-                
-                except Exception as e:
-                    result=f"Error while running the function {e}"
+            for tool_call in msg.tool_calls: # tool call and execute 
+                result=runTool(tool_call)
+               
 
 
 
+            debugTool(f"    {result}")
             messages.append({
             "role":"tool",
             "tool_id":"tool_call.id",
@@ -83,6 +81,6 @@ while True:
          "role":"assistant",
          "content":"msg.content"
     })
-    print("Assistant  "+ msg.content)
+    print("Assistant  "+(msg.content or "" ))
 
 
